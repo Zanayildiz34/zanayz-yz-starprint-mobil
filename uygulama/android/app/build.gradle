@@ -7,8 +7,9 @@ android {
         applicationId "tr.starprint.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // Mağaza her yüklemede daha büyük sürüm numarası ister: GitHub derleme numarası kullanılır
+        versionCode((System.getenv("SURUM_NO") ?: "1").toInteger())
+        versionName "1.0.${System.getenv("SURUM_NO") ?: "0"}"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

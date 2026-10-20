@@ -8,6 +8,8 @@ on:
 jobs:
   derle:
     runs-on: ubuntu-latest
+    env:
+      SURUM_NO: ${{ github.run_number }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
