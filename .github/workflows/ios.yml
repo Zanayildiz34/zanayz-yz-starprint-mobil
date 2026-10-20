@@ -16,10 +16,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Sayaç eklentisi
-        working-directory: sayac-agi
-        run: npm ci && npm run build
-
+      # Eklentinin JavaScript paketi iOS'ta gerekmez (Swift kaynakları doğrudan derlenir)
       - name: Uygulama
         working-directory: uygulama
         run: npm ci && npx cap sync ios
