@@ -2,7 +2,7 @@ name: TestFlight
 
 # iPhone uygulamasını imzalar ve TestFlight'a gönderir.
 # Gerekli GitHub sırları: ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (App Store Connect API anahtarı, Admin rolü).
-# Sertifika ve profil Apple tarafından bulutta otomatik yönetilir (Mac gerekmez).
+# Arşiv imzasız derlenir; gönderimde Apple'ın bulutta yönettiği dağıtım sertifikasıyla imzalanır (Mac gerekmez).
 on:
   workflow_dispatch:
   push:
@@ -41,7 +41,7 @@ jobs:
           # Her gönderim için artan derleme numarası (GitHub çalışma numarası)
           sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = ${{ github.run_number }};/g" App.xcodeproj/project.pbxproj
 
-      - name: Arşivle (imzalı)
+      - name: Arşivle (imzasız; imza gönderimde)
         working-directory: uygulama/ios/App
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -51,9 +51,7 @@ jobs:
           xcodebuild -project App.xcodeproj -scheme App -configuration Release \
             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
             DEVELOPMENT_TEAM=$TAKIM CODE_SIGN_STYLE=Automatic \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_$ASC_KEY_ID.p8" \
-            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             archive > "$RUNNER_TEMP/archive.log" 2>&1
           kod=$?
           tail -80 "$RUNNER_TEMP/archive.log"
