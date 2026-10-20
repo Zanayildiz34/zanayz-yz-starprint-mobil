@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SURUM_NO: ${{ github.run_number }}
+      IMZA_VAR: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +37,7 @@ jobs:
         run: ./gradlew --no-daemon assembleDebug
 
       - name: Mağaza sürümü (imza anahtarı tanımlıysa)
-        if: ${{ vars.ANDROID_IMZA == '1' }}
+        if: ${{ env.IMZA_VAR == 'true' }}
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -47,6 +48,7 @@ jobs:
           echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/starprint.jks"
           export ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/starprint.jks"
           ./gradlew --no-daemon bundleRelease
+          ls -la app/build/outputs/bundle/release/
 
       - uses: actions/upload-artifact@v4
         with:
