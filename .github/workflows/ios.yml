@@ -1,0 +1,35 @@
+name: iOS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  derle:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Sayaç eklentisi
+        working-directory: sayac-agi
+        run: npm ci && npm run build
+
+      - name: Uygulama
+        working-directory: uygulama
+        run: npm ci && npx cap sync ios
+
+      # İmzasız derleme: kodun iPhone için hatasız derlendiğini doğrular.
+      # App Store / TestFlight gönderimi, Apple hesabı anahtarları eklendiğinde ayrıca açılır.
+      - name: Derleme kontrolü (simülatör)
+        working-directory: uygulama/ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tail -40
+          test ${PIPESTATUS[0]} -eq 0

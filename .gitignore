@@ -1,0 +1,9 @@
+node_modules/
+dist/
+build/
+.gradle/
+*.apk
+*.aab
+*.jks
+DerivedData/
+.DS_Store

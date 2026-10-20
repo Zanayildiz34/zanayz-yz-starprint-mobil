@@ -1,0 +1,19 @@
+{
+  "name": "starprint-uygulama",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Star Print telefon uygulaması (Android + iOS)",
+  "scripts": {
+    "sync": "cap sync"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/ios": "8.5.3",
+    "sayac-agi": "file:../sayac-agi"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3",
+    "typescript": "^5.6.0"
+  }
+}

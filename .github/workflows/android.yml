@@ -1,0 +1,55 @@
+name: Android
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  derle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Sayaç eklentisi
+        working-directory: sayac-agi
+        run: npm ci && npm run build
+
+      - name: Uygulama
+        working-directory: uygulama
+        run: npm ci && npx cap sync android
+
+      - name: Deneme APK'sı (doğrudan telefona kurulur)
+        working-directory: uygulama/android
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Mağaza sürümü (imza anahtarı tanımlıysa)
+        if: ${{ vars.ANDROID_IMZA == '1' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        working-directory: uygulama/android
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/starprint.jks"
+          export ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/starprint.jks"
+          ./gradlew --no-daemon bundleRelease
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StarPrint-android
+          path: |
+            uygulama/android/app/build/outputs/apk/debug/*.apk
+            uygulama/android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: warn
