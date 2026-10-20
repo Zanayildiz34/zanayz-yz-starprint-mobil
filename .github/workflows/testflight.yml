@@ -73,8 +73,17 @@ jobs:
             <key>manageAppVersionAndBuildNumber</key><false/>
           </dict></plist>
           PLIST
+          set +e
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/cikti" \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_$ASC_KEY_ID.p8" \
-            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" | tail -60
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" > "$RUNNER_TEMP/export.log" 2>&1
+          kod=$?
+          tail -80 "$RUNNER_TEMP/export.log"
+          if [ $kod -ne 0 ]; then
+            # Hata satırlarını özet olarak (annotation) göster
+            grep -iE "error|fail|invalid|missing|not |ITMS|denied|certificate|profile" "$RUNNER_TEMP/export.log" | grep -v "^\s*$" | tail -15 | \
+              while IFS= read -r satir; do echo "::error::$satir"; done
+            exit $kod
+          fi
