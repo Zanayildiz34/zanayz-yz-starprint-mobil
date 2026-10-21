@@ -48,7 +48,10 @@ jobs:
           printf '%s' "$GOOGLE_SERVICE_INFO_PLIST" > App/GoogleService-Info.plist
           plutil -lint App/GoogleService-Info.plist
           /usr/libexec/PlistBuddy -c "Print :BUNDLE_ID" App/GoogleService-Info.plist
-          sudo gem install xcodeproj --no-document >/dev/null
+          # xcodeproj, makinedeki CocoaPods ile birlikte gelir; yoksa (ağ hatasına karşı birkaç denemeyle) kurulur
+          if ! ruby -e 'require "xcodeproj"' 2>/dev/null; then
+            for i in 1 2 3; do sudo gem install xcodeproj --no-document >/dev/null && break; sleep 15; done
+          fi
           ruby -e '
             require "xcodeproj"
             p = Xcodeproj::Project.open("App.xcodeproj")
