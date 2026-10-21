@@ -13,7 +13,7 @@ const config: CapacitorConfig = {
   },
   backgroundColor: "#f3f5f8",
   // Site uygulamayı tanısın (uzun oturum vb.)
-  appendUserAgent: "StarPrintUygulama/1.0",
+  appendUserAgent: "StarPrintUygulama/1.0 SistemBandi",
   android: {
     allowMixedContent: false,
   },
@@ -32,10 +32,10 @@ const config: CapacitorConfig = {
     },
   },
   plugins: {
-    // Telefon bildirimleri (Firebase Cloud Messaging). Uygulama açıkken gelen bildirimi site kendi şeridiyle
-    // gösterir; iki platformda da aynı görünsün diye iOS'un sistem bandı kapalı.
+    // Telefon bildirimleri (Firebase Cloud Messaging). iOS'ta uygulama açıkken de sistem bildirimi düşer
+    // (site bunu "SistemBandi" etiketinden anlar ve kendi şeridini göstermez). Android'de açıkken site şeridi çıkar.
     FirebaseMessaging: {
-      presentationOptions: [],
+      presentationOptions: ["alert", "badge", "sound"],
     },
   },
 };
