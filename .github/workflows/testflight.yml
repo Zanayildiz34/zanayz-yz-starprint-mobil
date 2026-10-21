@@ -3,6 +3,8 @@ name: TestFlight
 # iPhone uygulamasını imzalar ve TestFlight'a gönderir.
 # Gerekli GitHub sırları: ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (App Store Connect API anahtarı, Admin rolü).
 # Arşiv imzasız derlenir; gönderimde Apple'ın bulutta yönettiği dağıtım sertifikasıyla imzalanır (Mac gerekmez).
+# Telefon bildirimleri için: GOOGLE_SERVICE_INFO_PLIST (Firebase'in GoogleService-Info.plist içeriği).
+#   Varsa arşiv yerel (ad-hoc) imzayla derlenir ki bildirim yetkisi (aps-environment) uygulamaya girsin.
 on:
   workflow_dispatch:
   push:
@@ -34,6 +36,31 @@ jobs:
         working-directory: uygulama
         run: npm ci && npx cap sync ios
 
+      - name: Firebase (telefon bildirimleri)
+        working-directory: uygulama/ios/App
+        env:
+          GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
+        run: |
+          if [ -z "$GOOGLE_SERVICE_INFO_PLIST" ]; then
+            echo "::warning::GOOGLE_SERVICE_INFO_PLIST sırrı yok: uygulama bildirimsiz derleniyor"
+            exit 0
+          fi
+          printf '%s' "$GOOGLE_SERVICE_INFO_PLIST" > App/GoogleService-Info.plist
+          plutil -lint App/GoogleService-Info.plist
+          /usr/libexec/PlistBuddy -c "Print :BUNDLE_ID" App/GoogleService-Info.plist
+          sudo gem install xcodeproj --no-document >/dev/null
+          ruby -e '
+            require "xcodeproj"
+            p = Xcodeproj::Project.open("App.xcodeproj")
+            t = p.targets.find { |x| x.name == "App" }
+            g = p.main_group.find_subpath("App")
+            unless g.files.any? { |f| f.path == "GoogleService-Info.plist" }
+              t.resources_build_phase.add_file_reference(g.new_reference("GoogleService-Info.plist"))
+              p.save
+            end
+            puts "GoogleService-Info.plist projeye eklendi"'
+          echo "BILDIRIM=1" >> "$GITHUB_ENV"
+
       - name: API anahtarı
         env:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
@@ -56,13 +83,23 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
           set +e
+          if [ "$BILDIRIM" = "1" ]; then
+            # Yerel (ad-hoc) imza: bildirim yetkisi arşive girer, gönderimde Apple imzasıyla değiştirilir
+            IMZA=(CODE_SIGN_STYLE=Manual CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="-" \
+                  AD_HOC_CODE_SIGNING_ALLOWED=YES PROVISIONING_PROFILE_SPECIFIER="")
+          else
+            IMZA=(CODE_SIGN_STYLE=Automatic CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="")
+          fi
           xcodebuild -project App.xcodeproj -scheme App -configuration Release \
             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
-            DEVELOPMENT_TEAM=$TAKIM CODE_SIGN_STYLE=Automatic \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM=$TAKIM "${IMZA[@]}" \
             archive > "$RUNNER_TEMP/archive.log" 2>&1
           kod=$?
           tail -80 "$RUNNER_TEMP/archive.log"
+          if [ $kod -eq 0 ] && [ "$BILDIRIM" = "1" ]; then
+            uygulama=$(ls -d "$RUNNER_TEMP"/App.xcarchive/Products/Applications/*.app | head -1)
+            echo "Arşivdeki yetkiler:"; codesign -d --entitlements - "$uygulama" 2>/dev/null || true
+          fi
           if [ $kod -ne 0 ]; then
             grep -E "error:|Error |failed|No profiles|No signing|certificate|provisioning" "$RUNNER_TEMP/archive.log" | grep -v "^\s*$" | sort -u | tail -15 | \
               while IFS= read -r satir; do echo "::error::$satir"; done

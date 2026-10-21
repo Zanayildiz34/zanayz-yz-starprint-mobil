@@ -21,6 +21,23 @@ const config: CapacitorConfig = {
     contentInset: "automatic",
     limitsNavigationsToAppBoundDomains: false,
   },
+  // iOS SwiftPM: Firebase paketinin kimlik çakışmasını önler (eklenti belgesine göre)
+  experimental: {
+    ios: {
+      spm: {
+        packageOptions: {
+          "@capacitor-firebase/messaging": { symlink: true },
+        },
+      },
+    },
+  },
+  plugins: {
+    // Telefon bildirimleri (Firebase Cloud Messaging). Uygulama açıkken gelen bildirimi site kendi şeridiyle
+    // gösterir; iki platformda da aynı görünsün diye iOS'un sistem bandı kapalı.
+    FirebaseMessaging: {
+      presentationOptions: [],
+    },
+  },
 };
 
 export default config;

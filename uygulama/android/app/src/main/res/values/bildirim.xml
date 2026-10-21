@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Bildirim simgesinin rengi (Star Print laciverti) -->
+    <color name="bildirim_rengi">#152B56</color>
+</resources>

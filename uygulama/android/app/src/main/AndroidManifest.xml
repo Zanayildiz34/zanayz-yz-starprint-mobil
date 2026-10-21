@@ -20,6 +20,11 @@
             </intent-filter>
         </activity>
 
+        <!-- Telefon bildirimleri: varsayılan simge, renk ve kanal -->
+        <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_bildirim" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/bildirim_rengi" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="genel" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -38,4 +43,6 @@
     <!-- Servis talebinde arıza fotoğrafı çekmek için -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- Android 13+ bildirim izni -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>
